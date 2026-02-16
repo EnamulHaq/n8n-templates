@@ -1,0 +1,443 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const payload = $json.body?.payload ? JSON.parse($json.body.payload) : $json.body;\nreturn [{ json: payload }];"
+      },
+      "id": "5e34ed56-2c61-4d1e-bdb5-4f8d8c124704",
+      "name": "Parse GitHub Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "published",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "c08e534b-325b-40a1-915a-def0b1be6cf2"
+            },
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "released",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "8a1f9727-f5a6-4d1e-92dc-168d88615c8e"
+            },
+            {
+              "id": "1b674d99-703c-4f20-9ad0-7e6d475d4b8d",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "created",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "61d9c7a9-9276-429a-b172-b8a378e9aaef",
+      "name": "Only Published/Releases",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        944,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "release_notes",
+              "type": "string",
+              "value": "={{ $json.release?.body || 'No release notes provided.' }}"
+            },
+            {
+              "name": "tag_name",
+              "type": "string",
+              "value": "={{ $json.release?.tag_name || 'Unknown' }}"
+            },
+            {
+              "name": "repo_name",
+              "type": "string",
+              "value": "={{ $json.repository?.name || 'Unknown' }}"
+            },
+            {
+              "name": "repo_owner",
+              "type": "string",
+              "value": "={{ $json.repository?.owner?.login || 'Unknown' }}"
+            },
+            {
+              "name": "release_url",
+              "type": "string",
+              "value": "={{ $json.release?.html_url || '#' }}"
+            },
+            {
+              "name": "release_name",
+              "type": "string",
+              "value": "={{ $json.release?.name || $json.release?.tag_name || 'New Release' }}"
+            },
+            {
+              "name": "published_at",
+              "type": "string",
+              "value": "={{ $json.release?.published_at || $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1353537d-9359-4909-be60-3c9b910e3271",
+      "name": "Extract Release Info",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1168,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ... (keep your existing structure release notes code here - omitted for brevity)"
+      },
+      "id": "580f62a0-bd9e-4fa1-8841-216755653e60",
+      "name": "Structure Release Notes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "d670e7ab-70c3-4e12-91d7-126e849a5511",
+      "name": "OpenAI GPT-4o-mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1600,
+        3072
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "KT6qbEoeUQh8Xob9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"twitter\": \"...\", \"linkedin\": \"...\", \"facebook\": \"...\" }"
+      },
+      "id": "2d25cae0-a4fc-4a45-a787-80dad5123741",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1744,
+        3072
+      ]
+    },
+    {
+      "parameters": {
+        "person": "j4R1CI8gpL",
+        "text": "={{ $json.linkedin_post }}",
+        "shareMediaCategory": "IMAGE",
+        "additionalFields": {}
+      },
+      "id": "70c47139-59aa-4598-bcda-bc9493224d02",
+      "name": "Post to LinkedIn",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        2480
+      ],
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "3flB419gUVkz9IbV",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "prompt": "=Modern software release announcement card for GitHub project {{ $json.full_repo || 'personal-chattingssystem' }} version {{ $json.tag_name }}. Dark futuristic theme, rocket launch 🚀, code blocks, UI controls icons, SVG symbol, performance graph arrow up, celebratory confetti, professional developer style, clean typography, blue and purple accents, 16:9 aspect ratio",
+        "model": "dall-e-3",
+        "responseFormat": "imageUrl",
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "3d74063c-3b10-4bcc-b527-d5e22e5f0a34",
+      "name": "Generate Release Image (DALL·E)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        2848
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "KT6qbEoeUQh8Xob9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data[0].url }}",
+        "options": {}
+      },
+      "id": "01bba23c-4eca-4d1c-bb5e-a8d1b2c989fb",
+      "name": "Download Generated Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2480,
+        2848
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=[{\"title\":\"Release {{ $json.tag_name }}\",\"description\":\"{{ short summary }}\",\"color\":3447003,\"image\":{\"url\":\"attachment://release-{{ $json.tag_name }}.png\"}}]",
+        "options": {},
+        "embeds": {
+          "values": [
+            {}
+          ]
+        }
+      },
+      "id": "8354bc84-9222-4144-af05-0a7dbd5f2faa",
+      "name": "Send to Discord with Image",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        2560
+      ],
+      "webhookId": "88a7c6af-8afd-44e0-a69d-9e23bfc91742",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "uZOAMi6lcBBcijzp",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-release-webhook",
+        "options": {}
+      },
+      "id": "6dac5d47-4631-44d6-a839-ff7284d0c385",
+      "name": "Webhook (GitHub Release)1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        496,
+        2672
+      ],
+      "webhookId": "70b80513-b93c-4749-9a06-e78d4f1f2d23"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Version {{ $json.tag_name }} released in {{ $json.full_repo }}\n\n{{ $json.structured_notes || $json.release_notes }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a professional social media manager... (keep your improved prompt here - no markdown, emojis, etc.)"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "9e47105f-8465-4a84-9875-af989d4172a0",
+      "name": "Generate Posts (No Markdown)1",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1600,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Clean + unicode bold (keep your existing code here)"
+      },
+      "id": "50877896-7c91-4c9b-944b-75e7ab2c7383",
+      "name": "Apply Unicode Fake Bold1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        2672
+      ]
+    }
+  ],
+  "connections": {
+    "Parse GitHub Payload": {
+      "main": [
+        [
+          {
+            "node": "Only Published/Releases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Published/Releases": {
+      "main": [
+        [
+          {
+            "node": "Extract Release Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Release Info": {
+      "main": [
+        [
+          {
+            "node": "Structure Release Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure Release Notes": {
+      "main": [
+        [
+          {
+            "node": "Generate Posts (No Markdown)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Posts (No Markdown)1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Posts (No Markdown)1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Release Image (DALL·E)": {
+      "main": [
+        [
+          {
+            "node": "Download Generated Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Generated Image": {
+      "main": [
+        [
+          {
+            "node": "Send to Discord with Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook (GitHub Release)1": {
+      "main": [
+        [
+          {
+            "node": "Parse GitHub Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Posts (No Markdown)1": {
+      "main": [
+        [
+          {
+            "node": "Apply Unicode Fake Bold1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Unicode Fake Bold1": {
+      "main": [
+        [
+          {
+            "node": "Generate Release Image (DALL·E)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9c2db55b3a3fc9cef8cd3657084ef33f38144d63b5c080d9726bd73e9f365ad8"
+  }
+}
